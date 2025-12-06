@@ -13,12 +13,12 @@ app.use(express.json());
 // Отдаём статику из папки src
 app.use(express.static(path.join(__dirname, "src")));
 
-// Отдаём index.html на корень сайта
+// Главная страница
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "src", "index.html"));
 });
 
-// Endpoint для проверки QR-ссылки через VirusTotal
+// Endpoint для проверки URL через VirusTotal
 app.post("/vt/scan", async (req, res) => {
   try {
     const { url } = req.body;
@@ -27,12 +27,12 @@ app.post("/vt/scan", async (req, res) => {
     const apiKey = process.env.VIRUSTOTAL_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "API ключ не настроен" });
 
-    // Отправляем URL на проверку
+    // Отправка URL на проверку
     const vtResponse = await fetch("https://www.virustotal.com/api/v3/urls", {
       method: "POST",
-      headers: { 
+      headers: {
         "x-apikey": apiKey,
-        "Content-Type": "application/x-www-form-urlencoded" 
+        "Content-Type": "application/x-www-form-urlencoded"
       },
       body: `url=${encodeURIComponent(url)}`
     });
@@ -40,7 +40,7 @@ app.post("/vt/scan", async (req, res) => {
     const json = await vtResponse.json();
     const scanId = json.data.id;
 
-    // Запрашиваем результат проверки
+    // Получение результата проверки
     const reportResponse = await fetch(
       `https://www.virustotal.com/api/v3/analyses/${scanId}`,
       { headers: { "x-apikey": apiKey } }
@@ -61,5 +61,4 @@ app.post("/vt/scan", async (req, res) => {
   }
 });
 
-// Запуск сервера
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
