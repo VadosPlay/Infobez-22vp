@@ -28,11 +28,9 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 .title{font-size:20px;font-weight:700}
 .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
 
-/* layout */
 .grid{display:grid;grid-template-columns: 420px 1fr; gap:20px;align-items:start}
 @media(max-width:920px){ .grid{grid-template-columns:1fr} .video-wrap{order:-1} }
 
-/* camera/card */
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:14px;border-radius:12px;box-shadow:0 6px 22px rgba(0,0,0,0.6); }
 .video-wrap video{width:100%;height:auto;border-radius:10px;border:2px solid rgba(255,255,255,0.04);background:#010204}
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -41,18 +39,15 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 .btn:active{transform:translateY(1px)}
 .inputfile{display:none}
 
-/* result */
 .result{margin-top:12px;padding:12px;border-radius:10px;display:none;transform-origin:top center;animation:pop .25s ease both}
 @keyframes pop{from{opacity:0; transform:scale(.98) translateY(6px)} to{opacity:1; transform:scale(1) translateY(0)}}
 .result .url{display:block;word-break:break-all;margin-top:8px;color:#dff9ff;text-decoration:underline}
 .result .meta{margin-top:6px;color:var(--muted);font-size:13px}
 
-/* result status */
 .result.safe{background:linear-gradient(90deg, rgba(11,138,74,0.12), rgba(11,138,74,0.06)); border:1px solid rgba(11,138,74,0.2); box-shadow:0 6px 18px rgba(11,138,74,0.05)}
 .result.warn{background:linear-gradient(90deg, rgba(184,134,0,0.12), rgba(184,134,0,0.06)); border:1px solid rgba(184,134,0,0.2)}
 .result.danger{background:linear-gradient(90deg, rgba(214,69,69,0.12), rgba(214,69,69,0.06)); border:1px solid rgba(214,69,69,0.2)}
 
-/* history */
 .history{margin-top:16px; max-height:360px; overflow:auto;padding:12px;border-radius:10px;background:var(--glass); border:1px solid rgba(255,255,255,0.02)}
 .hist-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;transition:background .12s}
 .hist-item:hover{background:rgba(255,255,255,0.012)}
@@ -64,11 +59,9 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 .tag.warn{background:rgba(184,134,0,0.12); color:var(--warn)}
 .tag.danger{background:rgba(214,69,69,0.12); color:var(--danger)}
 
-/* subtle animations */
 .fade-in{animation:fadeIn .28s ease both}
 @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 
-/* small helpers */
 .small{font-size:13px;color:var(--muted)}
 .footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
 </style>
@@ -84,7 +77,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
   </div>
 
   <div class="grid">
-    <!-- left: camera + controls -->
     <div class="card video-wrap">
       <video id="camera" autoplay muted playsinline></video>
       <div class="controls">
@@ -98,7 +90,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
       <div id="resultBox" class="result" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- right: history and settings -->
     <div>
       <div class="card" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -143,7 +134,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 
   let stream = null, scanning = false, rafId = null;
 
-  // ---------- history ----------
+  // ---------- история ----------
   function loadHistory(){ return JSON.parse(localStorage.getItem('qr-history') || '[]'); }
   function saveHistory(arr){ localStorage.setItem('qr-history', JSON.stringify(arr)); }
   function addHistory(url,status,meta){
@@ -174,13 +165,12 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
   }
   renderHistory();
 
-  // ---------- utils ----------
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function isSafeScheme(raw){
     try{ const u = new URL(raw); return (u.protocol==='http:'||u.protocol==='https:'); }catch(e){ return false; }
   }
 
-  // ---------- QR decode ----------
+  // ---------- QR скан ----------
   function scanFrame(){
     if(!scanning) return;
     if(video.readyState >= 2 && video.videoWidth && video.videoHeight){
@@ -192,7 +182,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if(code && code.data) handleDecoded(code.data);
       }catch(e){
-        // ignore getImageData errors on some browsers/devices
       }
     }
     rafId = requestAnimationFrame(scanFrame);
@@ -210,7 +199,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     }catch(e){ showMessage('Ошибка обработки изображения: '+e.message, 'warn'); }
   }
 
-  // ---------- display ----------
   function showMessage(text, status='warn', url=null, meta=''){
     resultBox.style.display = 'block';
     resultBox.className = 'result ' + (status==='SAFE'?'safe':(status==='DANGER'?'danger':'warn'));
@@ -221,7 +209,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
       inner += `<div style="margin-top:8px"><button id="openNow" class="btn primary">Открыть (если безопасно)</button> <button id="copyNow" class="btn">Копировать</button> <button id="vtCheck" class="btn">Проверить VirusTotal</button></div>`;
     }
     resultBox.innerHTML = inner;
-    // attach handlers if url
     setTimeout(()=>{
       const openNow = document.getElementById('openNow');
       const copyNow = document.getElementById('copyNow');
@@ -232,7 +219,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     },50);
   }
 
-  // ---------- analysis logic (local heuristics) ----------
   function localAnalyze(url){
     const lower = String(url).toLowerCase();
     let score = 0;
@@ -249,22 +235,18 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     return score;
   }
 
-  // ---------- Phishing lists (simple fetch) ----------
   async function checkPhishingLists(url){
     try{
       const host = (new URL(url)).hostname;
-      // tiny caches to reduce repeated fetches
       if(!window._phishCache){
         window._phishCache = {};
       }
       const lists = [
         'https://openphish.com/feed.txt',
-        // alternative csv/list (some CORS may block; server-side preferred)
         'https://phishstats.info/phish_score.csv'
       ];
       for(const list of lists){
         try{
-          // simple cache by list URL
           if(!window._phishCache[list]){
             const res = await fetch(list);
             if(!res.ok) { window._phishCache[list] = ''; continue; }
@@ -272,17 +254,15 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
           }
           if(window._phishCache[list].includes(host)) return true;
         }catch(e){
-          // ignore CORS/fetch errors (some lists block direct fetch)
         }
       }
     }catch(e){}
     return false;
   }
 
-  // ---------- handle decoded QR ----------
   let lastHandled = null;
   async function handleDecoded(raw){
-    if(lastHandled === raw) return; // simple dedupe
+    if(lastHandled === raw) return;
     lastHandled = raw;
     if(!isSafeScheme(raw)){
       showMessage('QR содержит небезопасную схему (не http/https)', 'DANGER', raw, 'Схема не поддерживается');
@@ -290,27 +270,22 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
       return;
     }
 
-    // local heuristics
     const score = localAnalyze(raw);
     const localStatus = score <= 2 ? 'SAFE' : (score <= 6 ? 'WARN' : 'DANGER');
     showMessage(localStatus === 'SAFE' ? 'Ссылка локально признана безопасной' : (localStatus==='WARN'?'Ссылка вызывает подозрение':'Опасная ссылка'), localStatus, raw, 'Локальная оценка: '+score);
 
-    // add to history (we'll later update with VT result if available)
     addHistory(raw, localStatus, 'Локальная оценка: '+score);
 
-    // also check open phishing lists (best-effort)
     const inLists = await checkPhishingLists(raw);
     if(inLists){
       showMessage('Домен найден в публичных фишинговых списках','DANGER',raw,'Найден в открытых списках');
       addHistory(raw,'DANGER','Найден в открыт. списках');
     }
 
-    // optionally kick off VirusTotal check in background (non-blocking)
-    // if server available, do it
+
     try{ callVirusTotal(raw, true); }catch(e){}
   }
 
-  // ---------- Camera control ----------
   btnToggle.onclick = async () => {
     if(scanning){ return; }
     try{
@@ -338,7 +313,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     btnToggle.textContent = 'Включить камеру';
   };
 
-  // ---------- File input ----------
   fileInput.onchange = (e)=>{
     const f = e.target.files && e.target.files[0];
     if(!f) return;
@@ -348,10 +322,8 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     img.src = URL.createObjectURL(f);
   };
 
-  // ---------- Paste from clipboard ----------
   btnPaste.onclick = async ()=>{
     try{
-      // requires "clipboard-read" permission in some browsers
       const items = await navigator.clipboard.read();
       for(const item of items){
         for(const type of item.types){
@@ -366,12 +338,10 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
       }
       alert('В буфере нет изображения (поддерживается только изображение).');
     }catch(e){
-      // some browsers deny navigator.clipboard.read; fallback: try paste event
       alert('Невозможно прочитать буфер: ' + (e && e.message ? e.message : 'доступ запрещён'));
     }
   };
 
-  // ---------- sample btn ----------
   btnSample.onclick = ()=> {
     const samples = [
       'https://example.com/welcome',
@@ -383,11 +353,8 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     handleDecoded(pick);
   };
 
-  // ---------- VirusTotal integration ----------
-  //  - frontend calls POST /vt/scan { url } on same origin
-  //  - server returns { status: 'ok'|'error', vt: { summary... } }
+
   async function callVirusTotal(url, background=false){
-    // check that server endpoint exists
     try{
       const res = await fetch('/vt/scan', {
         method:'POST',
@@ -403,14 +370,11 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
         if(!background) alert('VirusTotal: ' + data.error);
         return;
       }
-      // data.vtSummary expected (summary object)
       const summary = data.vtSummary || {};
       const positives = summary.positives || 0;
-      // show result (override local status if dangerous)
       let status = 'SAFE';
       if(positives > 0) status = 'DANGER';
       else if(summary.suspicious) status = 'WARN';
-      // update display and history
       showMessage(`VirusTotal: ${positives} детекций`, status, url, 'VT: '+(summary.engine_count||0)+' движков');
       addHistory(url, status, 'VirusTotal: ' + positives + ' детекций');
     }catch(e){
@@ -418,7 +382,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     }
   }
 
-  // quick VT info button (uses last URL in history or notify)
   btnVTinfo.onclick = ()=>{
     const h = loadHistory();
     if(!h.length){ alert('Нет URL в истории для проверки'); return; }
@@ -426,7 +389,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     callVirusTotal(last,false);
   };
 
-  // expose simple manual decode for testing (e.g., from server returned image)
   window._debugDecodeFromURL = (imgUrl) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -438,3 +400,4 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 </script>
 </body>
 </html>
+
