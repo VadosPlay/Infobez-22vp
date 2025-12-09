@@ -322,6 +322,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     img.src = URL.createObjectURL(f);
   };
 
+// --------Обработка из буферу обмена------------
   btnPaste.onclick = async ()=>{
     try{
       const items = await navigator.clipboard.read();
@@ -400,4 +401,5 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 </script>
 </body>
 </html>
+
 
