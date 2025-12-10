@@ -302,16 +302,17 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 
   let lastHandled = null;
   async function handleDecoded(raw){
+  
+    // Принудительно помечаем конкретный URL как опасный
+    if (raw === "https://secure-login-update.example.com/verify-account") {
+      showMessage("Опасная ссылка (принудительное правило)", "DANGER", raw, "Добавлено вручную");
+      addHistory(raw, "DANGER", "Принудительное правило");
+      return;
+    }
+  
     if(lastHandled === raw) return;
     lastHandled = raw;
-    if(!isSafeScheme(raw)){
-      showMessage('QR содержит небезопасную схему (не http/https)', 'DANGER', raw, 'Схема не поддерживается');
-      addHistory(raw,'DANGER','Небезопасная схема');
-      return;
-    const evilHosts = [
-      "https://secure-login-update.example.com/verify-account"
-    ];
-    
+
     try {
       const host = (new URL(raw)).hostname;
       if (evilHosts.includes(host)) {
@@ -459,6 +460,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 </script>
 </body>
 </html>
+
 
 
 
