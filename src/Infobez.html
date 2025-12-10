@@ -223,20 +223,36 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     const lower = String(url).toLowerCase();
     let score = 0;
   
-    // ===== Новый блок: проверка известных опасных доменов =====
-    try{
-      const host = (new URL(url)).hostname.toLowerCase();
-      const knownBad = [
-        'secure-login-update.example.com',   // ← твой пример
-        'login-secure.example.ru',
-        'support-confirm.example.net'
-      ];
-      if(knownBad.includes(host)){
-        return 999; // моментально DANGER
-      }
-    }catch(e){
-      score += 3;
+    // больше ключевых слов и выше штраф
+    const risky = [
+      "login","verify","account","secure","update",
+      "wallet","bank","confirm","signin",
+      "bonus","free","coupon"
+    ];
+    risky.forEach(w => { if(lower.includes(w)) score += 4; });
+  
+    if(!lower.startsWith("https://")) score += 6;
+    if(lower.includes("@")) score += 6;
+  
+    try {
+      const u = new URL(url);
+      const host = u.hostname;
+  
+      if(host.split(".").length > 3) score += 3;
+      if((host.match(/-/g)||[]).length > 2) score += 3;
+      if(host.length > 30) score += 3;
+  
+      // подозрение: домен маскируется под банк/аккаунты
+      const fakeBrands = ["bank","login","secure","update"];
+      fakeBrands.forEach(b => { if(host.includes(b)) score += 2; });
+  
+    } catch(e){
+      score += 6;
     }
+  
+    return score;
+  }
+
 
   // ===== Усиленный анализ фишинга =====
   const risky = [
@@ -292,10 +308,28 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
       showMessage('QR содержит небезопасную схему (не http/https)', 'DANGER', raw, 'Схема не поддерживается');
       addHistory(raw,'DANGER','Небезопасная схема');
       return;
+    const evilHosts = [
+      "secure-login-update.example.com"
+    ];
+    
+    try {
+      const host = (new URL(raw)).hostname;
+      if (evilHosts.includes(host)) {
+        showMessage(
+          "Опасная ссылка: домен в стоп-листе",
+          "DANGER",
+          raw,
+          "Стоп-лист"
+        );
+        addHistory(raw, "DANGER", "Стоп-лист");
+        return;
+      }
+    } catch(e){}
+
     }
 
     const score = localAnalyze(raw);
-    const localStatus = score < 3 ? 'SAFE' : (score < 7 ? 'WARN' : 'DANGER');
+  const localStatus = score < 4 ? "SAFE" : (score < 10 ? "WARN" : "DANGER");
     showMessage(localStatus === 'SAFE' ? 'Ссылка локально признана безопасной' : (localStatus==='WARN'?'Ссылка вызывает подозрение':'Опасная ссылка'), localStatus, raw, 'Локальная оценка: '+score);
 
     addHistory(raw, localStatus, 'Локальная оценка: '+score);
@@ -425,6 +459,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 </script>
 </body>
 </html>
+
 
 
 
