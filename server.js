@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Отдаём статику из папки src
+// Статика
 app.use(express.static(path.join(__dirname, "src")));
 
 // Главная страница
@@ -18,47 +18,74 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "src", "index.html"));
 });
 
-// Endpoint для проверки URL через VirusTotal
+// 🔥 VirusTotal proxy-endpoint
 app.post("/vt/scan", async (req, res) => {
   try {
     const { url } = req.body;
-    if (!url) return res.status(400).json({ error: "URL отсутствует" });
-
     const apiKey = process.env.VIRUSTOTAL_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "API ключ не настроен" });
 
-    // Отправка URL на проверку
-    const vtResponse = await fetch("https://www.virustotal.com/api/v3/urls", {
-      method: "POST",
-      headers: {
-        "x-apikey": apiKey,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: `url=${encodeURIComponent(url)}`
-    });
+    if (!apiKey) {
+      return res.json({ error: "API ключ не найден. Добавьте VIRUSTOTAL_API_KEY в .env" });
+    }
 
-    const json = await vtResponse.json();
-    const scanId = json.data.id;
+    if (!url || !url.startsWith("http")) {
+      return res.json({ error: "Некорректный URL" });
+    }
 
-    // Получение результата проверки
-    const reportResponse = await fetch(
-      `https://www.virustotal.com/api/v3/analyses/${scanId}`,
-      { headers: { "x-apikey": apiKey } }
+    // 1️⃣ Отправляем на сканирование
+    const scanRes = await fetch(
+      "https://www.virustotal.com/api/v3/urls",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "x-apikey": apiKey
+        },
+        body: "url=" + encodeURIComponent(url)
+      }
     );
+    const scanData = await scanRes.json();
 
-    const reportJson = await reportResponse.json();
-    const stats = reportJson.data.attributes.stats;
+    if (!scanData.data || !scanData.data.id) {
+      return res.json({ error: "VirusTotal не вернул ID" });
+    }
 
-    res.json({
-      harmless: stats.harmless,
-      malicious: stats.malicious,
-      suspicious: stats.suspicious,
-      undetected: stats.undetected
+    const analysisId = scanData.data.id;
+
+    // 2️⃣ Ждём пока будет готов результат
+    let tries = 0, resultData = null;
+    while (tries < 8) {
+      await new Promise(r => setTimeout(r, 1000)); // пауза 1 сек
+      const res2 = await fetch(
+        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+        { headers: { "x-apikey": apiKey } }
+      );
+      resultData = await res2.json();
+      if (resultData.data?.attributes?.stats) break;
+      tries++;
+    }
+
+    if (!resultData.data?.attributes?.stats) {
+      return res.json({ error: "VT слишком долго отвечает, попробуйте позже" });
+    }
+
+    const stats = resultData.data.attributes.stats;
+
+    return res.json({
+      vtSummary: {
+        engine_count: Object.values(stats).reduce((a, b) => a + b, 0),
+        positives: stats.malicious || 0,
+        suspicious: stats.suspicious || 0
+      }
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка проверки" });
+    console.error("VT ERROR:", err);
+    res.json({ error: "Ошибка сервера: " + err.message });
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Запуск сервера
+app.listen(PORT, () => {
+  console.log(`Server running http://localhost:${PORT}`);
+});
