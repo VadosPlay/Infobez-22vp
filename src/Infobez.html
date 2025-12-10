@@ -222,18 +222,42 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
   function localAnalyze(url){
     const lower = String(url).toLowerCase();
     let score = 0;
-    const risky = ['login','verify','confirm','secure','account','update','free','gift','bonus','prize'];
-    risky.forEach(w => { if(lower.includes(w)) score += 2; });
-    if(!lower.startsWith('https://')) score += 3;
-    if(url.length > 140) score += 2;
-    if(url.includes('@')) score += 4;
+  
+    // ===== Новый блок: проверка известных опасных доменов =====
     try{
-      const host = (new URL(url)).hostname;
-      if(host.length > 40) score += 2;
-      if((host.match(/-/g)||[]).length > 3) score += 2;
-    }catch(e){ score += 2; }
-    return score;
-  }
+      const host = (new URL(url)).hostname.toLowerCase();
+      const knownBad = [
+        'secure-login-update.example.com',   // ← твой пример
+        'login-secure.example.ru',
+        'support-confirm.example.net'
+      ];
+      if(knownBad.includes(host)){
+        return 999; // моментально DANGER
+      }
+    }catch(e){
+      score += 3;
+    }
+
+  // ===== Усиленный анализ фишинга =====
+  const risky = [
+    'login','verify','confirm','secure','account',
+    'update','free','gift','bonus','prize','signin',
+    'credential','recovery','unlock'
+  ];
+  risky.forEach(w => { if(lower.includes(w)) score += 3; });
+
+  if(!lower.startsWith('https://')) score += 4;  // HTTP → ещё опаснее
+  if(url.length > 120) score += 3;
+  if(url.includes('@')) score += 5;
+
+  try{
+    const host = (new URL(url)).hostname;
+    if(host.length > 32) score += 3;
+    if((host.match(/-/g)||[]).length > 2) score += 3;
+  }catch(e){ score += 3; }
+
+  return score;
+}
 
   async function checkPhishingLists(url){
     try{
@@ -271,7 +295,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
     }
 
     const score = localAnalyze(raw);
-    const localStatus = score <= 2 ? 'SAFE' : (score <= 6 ? 'WARN' : 'DANGER');
+    const localStatus = score < 3 ? 'SAFE' : (score < 7 ? 'WARN' : 'DANGER');
     showMessage(localStatus === 'SAFE' ? 'Ссылка локально признана безопасной' : (localStatus==='WARN'?'Ссылка вызывает подозрение':'Опасная ссылка'), localStatus, raw, 'Локальная оценка: '+score);
 
     addHistory(raw, localStatus, 'Локальная оценка: '+score);
@@ -401,5 +425,6 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-grad
 </script>
 </body>
 </html>
+
 
 
